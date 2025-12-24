@@ -13,7 +13,11 @@ public class LobbySceneHandler : MonoBehaviour
 
     private Image m_fadeCover;
 
-    //private GameObject m_Stages;
+    private GameObject Popup_DailyBonus;
+
+    private GameObject Popup_Mission;
+
+    private GameObject Popup_Setting;
 
     private GameObject m_Player;
     void Awake()
@@ -22,14 +26,20 @@ public class LobbySceneHandler : MonoBehaviour
 
         m_fsmLobby = new LobbyFSM(new());
 
-      //  m_Stages = GameObject.Find("Stages");
-
-       // m_Player = GameObject.Find("Player");
+       
+        // m_Player = GameObject.Find("Player");
     }
+
 
     private void Start()
     {
         m_fsmLobby.StartFSM();
+
+        Popup_DailyBonus = transform.Find("Middle/Daily_Bonus_30Day").gameObject;
+
+        Popup_Mission = transform.Find("Middle/Mission_List").gameObject;
+
+        Popup_Setting = transform.Find("Middle/Settings").gameObject;
 
     }
     private void OnDestroy()
@@ -38,6 +48,19 @@ public class LobbySceneHandler : MonoBehaviour
         m_fsmLobby = null;
     }
 
+    public void Show_Daily_Bonus_30Day()
+    {
+        Popup_DailyBonus.gameObject.SetActive(true);
+    }
+    public void Show_Popup_Mssion()
+    {
+        Popup_Mission.gameObject.SetActive(true);
+    }
+
+    public void Show_Popup_Setting()
+    {
+        Popup_Setting.gameObject.SetActive(true);
+    }
     public void FadeInLobbyScene(Action<string> callback)
     {
         DOTween.Sequence().AppendInterval(1)
