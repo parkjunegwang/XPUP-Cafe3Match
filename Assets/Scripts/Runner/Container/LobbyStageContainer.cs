@@ -8,8 +8,8 @@ using UnityEngine.UI;
 public class LobbyStageContainer : MonoBehaviour
 {
     private bool isBoss = false; //데이터 처리 할수있음 하자.. 시간이없을지도?  .to 준광 검색용
-    private TextMeshPro m_StageName;
-    private Image[] m_StageSexual;
+  //  private TextMeshPro m_StageName;
+  //  private Image[] m_StageSexual;
 
     private Button m_btnStageEnter;
 
@@ -19,16 +19,16 @@ public class LobbyStageContainer : MonoBehaviour
     public int m_StageLevel = 0;
     void Awake()
     {
-        m_StageName = transform.Find("Name").GetComponent<TextMeshPro>();
+      //  m_StageName = transform.Find("Name").GetComponent<TextMeshPro>();
 
-        var StageSexual = transform.Find("StageSexual");
+        //var StageSexual = transform.Find("StageSexual");
 
-        m_StageSexual = new Image[StageSexual.transform.childCount];
+        //m_StageSexual = new Image[StageSexual.transform.childCount];
 
-        for (int i = 0; i < m_StageSexual.Length; ++i)
-        {
-            m_StageSexual[i] = StageSexual.transform.GetChild(i).GetComponent<Image>();
-        }
+        //for (int i = 0; i < m_StageSexual.Length; ++i)
+        //{
+        //    m_StageSexual[i] = StageSexual.transform.GetChild(i).GetComponent<Image>();
+        //}
 
         m_btnStageEnter = GetComponent<Button>();
 
@@ -36,13 +36,13 @@ public class LobbyStageContainer : MonoBehaviour
 
         OnLaodResourcesSprite();
 
-        if (m_StageLevel <= PlayerPrefs.GetInt("MaxClearStage", -1))
-        {
-            for (int i = 0; i < m_StageSexual.Length; ++i)
-            {
-                m_StageSexual[i].sprite = m_spriteStar;
-            }
-        }
+        //if (m_StageLevel <= PlayerPrefs.GetInt("MaxClearStage", -1))
+        //{
+        //    for (int i = 0; i < m_StageSexual.Length; ++i)
+        //    {
+        //        m_StageSexual[i].sprite = m_spriteStar;
+        //    }
+        //}
     }
 
     private void OnDestroy()
@@ -59,21 +59,21 @@ public class LobbyStageContainer : MonoBehaviour
 
     public void ShowClearStage()
     {
-        for (int i = 0; i < m_StageSexual.Length; ++i)
-        {
-            m_StageSexual[i].sprite = m_spriteStar;
+        //for (int i = 0; i < m_StageSexual.Length; ++i)
+        //{
+        //    m_StageSexual[i].sprite = m_spriteStar;
 
-            m_StageSexual[i].transform.localScale = new Vector3(2f, 2f, 2f);
-        }
+        //    m_StageSexual[i].transform.localScale = new Vector3(2f, 2f, 2f);
+        //}
 
         DG.Tweening.Sequence seq = DOTween.Sequence();
 
         
 
-        seq.Append(m_StageSexual[0].transform.DOScale(new Vector3(1f,1f,1f), 0.5f).SetEase(Ease.OutQuad))
-           .Append(m_StageSexual[1].transform.DOScale(new Vector3(1f, 1f, 1f), 0.5f).SetEase(Ease.OutQuad))
-           .Append(m_StageSexual[2].transform.DOScale(new Vector3(1f, 1f, 1f), 0.5f).SetEase(Ease.OutQuad))
-            ;
+        //seq.Append(m_StageSexual[0].transform.DOScale(new Vector3(1f,1f,1f), 0.5f).SetEase(Ease.OutQuad))
+        //   .Append(m_StageSexual[1].transform.DOScale(new Vector3(1f, 1f, 1f), 0.5f).SetEase(Ease.OutQuad))
+        //   .Append(m_StageSexual[2].transform.DOScale(new Vector3(1f, 1f, 1f), 0.5f).SetEase(Ease.OutQuad))
+        //    ;
         //클리어하고 나옴 연출 별 팡팡팡! .to 준광 검색용
     }
 

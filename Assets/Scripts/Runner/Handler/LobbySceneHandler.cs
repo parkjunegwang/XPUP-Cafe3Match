@@ -13,7 +13,7 @@ public class LobbySceneHandler : MonoBehaviour
 
     private Image m_fadeCover;
 
-    private GameObject m_Stages;
+    //private GameObject m_Stages;
 
     private GameObject m_Player;
     void Awake()
@@ -22,39 +22,15 @@ public class LobbySceneHandler : MonoBehaviour
 
         m_fsmLobby = new LobbyFSM(new());
 
-        m_Stages = GameObject.Find("Stages");
+      //  m_Stages = GameObject.Find("Stages");
 
-        m_Player = GameObject.Find("Player");
+       // m_Player = GameObject.Find("Player");
     }
 
     private void Start()
     {
         m_fsmLobby.StartFSM();
 
-        //저장데이터는 그냥.. PlayerPrefs쓰자구
-        int isClear = PlayerPrefs.GetInt("Clear", 0);
-        var stages = m_Stages.transform; 
-
-        if (isClear == 1)
-        {
-            int ClearStage = PlayerPrefs.GetInt("ClearStage", 0);
-  
-            var stage = stages.GetChild(ClearStage).GetComponent<LobbyStageContainer>();
-
-            stage.ShowClearStage();
-
-        }
-        var MaxClear = PlayerPrefs.GetInt("MaxClearStage", -1);
-
-        if (MaxClear == 8) MaxClear = 7;
-
-        m_Player.transform.localPosition = stages.GetChild(MaxClear + 1).localPosition + new Vector3(200f, 0f, 0f);
-
-        //초기화
-        PlayerPrefs.SetInt("Clear", 0);
-        PlayerPrefs.SetInt("ClearStage", 0);
-
-        //시간이없어서 로비는 하드코디이잉! End
     }
     private void OnDestroy()
     {
