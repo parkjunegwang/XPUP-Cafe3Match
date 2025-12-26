@@ -64,59 +64,83 @@ public class PlayerCloudService
     /// 데일리 보상 수령 (서버시간 기준 24시간 쿨타임)
     /// rewardAmount 만큼 currency 증가
     /// </summary>
-    public async Task<ClaimDailyResult> TryClaimDailyAsync(int rewardAmount, TimeSpan cooldown)
+    public async Task<ClaimDailyResult> TryClaimDailyKstAsync(int reward)
     {
-        // 트랜잭션으로 원자 처리(해킹/중복 클릭/경합 방지)
-        return await _db.RunTransactionAsync(async transaction =>
+        return await _db.RunTransactionAsync(async tx =>
         {
-            var snap = await transaction.GetSnapshotAsync(UserDoc);
-
+            var snap = await tx.GetSnapshotAsync(UserDoc);
             PlayerCloudData data;
+
             if (!snap.Exists)
             {
                 data = new PlayerCloudData
                 {
-                    lastMissionAtUtc = Timestamp.FromDateTime(DateTime.SpecifyKind(DateTime.UtcNow, DateTimeKind.Utc)),
-                    currency = 0,
-                    version = 1
+                    lastMissionAtUtc = Timestamp.FromDateTime(
+                        DateTime.SpecifyKind(new DateTime(2000, 1, 1), DateTimeKind.Utc)),
+                    currency = 0
                 };
-                transaction.Set(UserDoc, data, SetOptions.MergeAll);
-                // 아래 로직 계속 진행
+                tx.Set(UserDoc, data);
             }
             else
             {
                 data = snap.ConvertTo<PlayerCloudData>();
             }
 
-            // 서버가 찍어줄 timestamp (commit 시점에 결정됨)
-            var serverNow = FieldValue.ServerTimestamp;
+            DateTime lastClaimUtc = data.lastMissionAtUtc.ToDateTime();
+            DateTime todayKstMidnightUtc = GetTodayKstMidnightUtc();
 
-            // 비교용: 현재는 snap에 있는 lastMissionAtUtc만 믿고 쿨타임 계산.
-            // "정확한 서버 현재시간"을 읽어 비교하려면 별도 serverTime 문서 패턴이 필요하지만,
-            // 이 정도면 데일리 안정적으로 굴러감(쿨타임 기준은 lastMissionAt 기준).
-            var last = data.lastMissionAtUtc.ToDateTime(); // UTC DateTime
-            if (last.Kind != DateTimeKind.Utc) last = DateTime.SpecifyKind(last, DateTimeKind.Utc);
-
-            var nowClientUtc = DateTime.UtcNow; // 비교용 힌트(최종 시간은 서버가 찍음)
-            var elapsed = nowClientUtc - last;
-
-            if (elapsed < cooldown)
+            if (lastClaimUtc >= todayKstMidnightUtc)
             {
-                var remain = cooldown - elapsed;
-                return ClaimDailyResult.FailCooldown(remain);
+                return ClaimDailyResult.FailAlreadyClaimed(GetNextKstMidnightUtc().TimeOfDay);
             }
 
-            var newCurrency = data.currency + rewardAmount;
+            int newCurrency = data.currency + reward;
 
-            // 업데이트: lastMissionAtUtc는 서버가 확정
-            transaction.Update(UserDoc, new System.Collections.Generic.Dictionary<string, object>
-            {
-                { "currency", newCurrency },
-                { "lastMissionAtUtc", serverNow },
-            });
+            tx.Update(UserDoc, new Dictionary<string, object>
+        {
+            { "currency", newCurrency },
+            { "lastMissionAtUtc", FieldValue.ServerTimestamp }
+        });
 
             return ClaimDailyResult.Success(newCurrency);
         });
+    }
+
+    public DateTime GetNextKstMidnightUtc()
+    {
+        DateTime utcNow = DateTime.UtcNow;
+        DateTime kstNow = utcNow.AddHours(9);
+
+        DateTime nextKstMidnight = new DateTime(
+            kstNow.Year,
+            kstNow.Month,
+            kstNow.Day,
+            0, 0, 0
+        ).AddDays(1);
+
+        return DateTime.SpecifyKind(nextKstMidnight.AddHours(-9), DateTimeKind.Utc);
+    }
+    public static DateTime GetTodayKstMidnightUtc()
+    {
+        // KST = UTC + 9
+        DateTime utcNow = DateTime.UtcNow;
+
+        // 현재 시간을 KST로 변환
+        DateTime kstNow = utcNow.AddHours(9);
+
+        // KST 기준 오늘 00:00
+        DateTime kstMidnight = new DateTime(
+            kstNow.Year,
+            kstNow.Month,
+            kstNow.Day,
+            0, 0, 0,
+            DateTimeKind.Unspecified
+        );
+
+        // 다시 UTC로 변환
+        DateTime utcMidnight = kstMidnight.AddHours(-9);
+
+        return DateTime.SpecifyKind(utcMidnight, DateTimeKind.Utc);
     }
 }
 
@@ -125,10 +149,34 @@ public struct ClaimDailyResult
     public bool ok;
     public int currencyAfter;
     public TimeSpan remain;
+    public FailReason reason;
 
-    public static ClaimDailyResult Success(int currencyAfter) =>
-        new ClaimDailyResult { ok = true, currencyAfter = currencyAfter, remain = TimeSpan.Zero };
+    public enum FailReason
+    {
+        None,
+        AlreadyClaimed
+    }
 
-    public static ClaimDailyResult FailCooldown(TimeSpan remain) =>
-        new ClaimDailyResult { ok = false, currencyAfter = -1, remain = remain };
+    public static ClaimDailyResult Success(int currencyAfter)
+    {
+        return new ClaimDailyResult
+        {
+            ok = true,
+            currencyAfter = currencyAfter,
+            remain = TimeSpan.Zero,
+            reason = FailReason.None
+        };
+    }
+
+    public static ClaimDailyResult FailAlreadyClaimed(TimeSpan remainUntilNext)
+    {
+        return new ClaimDailyResult
+        {
+            ok = false,
+            currencyAfter = -1,
+            remain = remainUntilNext,
+            reason = FailReason.AlreadyClaimed
+        };
+    }
 }
+
